@@ -1,0 +1,58 @@
+version: 2.1
+orbs:
+  azure-cli: circleci/azure-cli@1.2.0
+jobs:
+  build:
+    working_directory: ~/project
+    docker:
+      - image: cimg/node:17.4.0
+    steps:
+      - checkout
+      - run:
+          name: Update NPM
+          command: "sudo npm install -g npm"
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package-lock.json" }}
+      - run:
+          name: Install Dependencies
+          command: npm install
+      - save_cache:
+          key: dependency-cache-{{ checksum "package-lock.json" }}
+          paths:
+            - ./node_modules
+      - run:
+          name: Build the application
+          command: npm run build
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - build
+  login-to-azure-and-deploy:
+    executor: azure-cli/default
+    steps:
+      - azure-cli/install
+      - azure-cli/login-with-user:
+          alternate-tenant: false
+      - attach_workspace:
+          at: ~/project
+      - run:
+          command: az webapp deployment source show --resource-group DemoApp --name azure-react-tutorial
+      - run:
+          name: "Deploy Web App to Azure"
+          command: |
+            az webapp deployment source config-local-git --resource-group DemoApp --name azure-react-tutorial
+            cd ~/project/build/
+            git init
+            git config --global user.email "me@mail.com"
+            git config --global user.name "yemiwebby"
+            git add .
+            git commit -m "New update"
+            git remote add azure https://$GIT_USERNAME:$GIT_PASSWORD@azure-react-tutorial.scm.azurewebsites.net/azure-react-tutorial.git
+            git push azure master --force
+workflows:
+  build-and-deploy:
+    jobs:
+      - build
+      - login-to-azure-and-deploy:
+          requires:
+            - build
