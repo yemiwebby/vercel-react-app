@@ -19,10 +19,7 @@ function App() {
     <div className="container">
       <div className="row">
         <div className="col-md-12 text-center" style={{ margin: "50px 0" }}>
-          <h1>
-            {" "}
-            Fake <i>100</i> Posts from JSON Placeholder
-          </h1>
+          <h1> Fake Posts from JSON Placeholder</h1>
         </div>
       </div>
 
